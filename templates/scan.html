@@ -1,0 +1,113 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewBB - Сканирование QR-кода</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+    <div class="text-center relative">
+        <h1 class="text-3xl font-bold mb-4">Сканирование QR-кода</h1>
+        <div class="relative">
+            <video id="video" width="300" height="300" class="mx-auto mb-4"></video>
+            <div id="notification" class="absolute top-0 left-0 right-0 bg-opacity-90 py-2 text-center text-lg hidden"></div>
+        </div>
+        <canvas id="canvas" class="hidden"></canvas>
+        <p id="output" class="text-lg"></p>
+        <div class="mt-4">
+            <a href="/logout" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2">Выйти</a>
+            <a href="/stats" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">Статистика</a>
+            <a href="/" class="block mt-4 text-blue-400 hover:underline">Вернуться назад</a>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvas = canvasElement.getContext('2d');
+        const output = document.getElementById('output');
+        const notification = document.getElementById('notification');
+        let lastScannedCode = null;
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                requestAnimationFrame(tick);
+            })
+            .catch(err => {
+                output.textContent = 'Ошибка доступа к камере: ' + err;
+            });
+
+        function tick() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasElement.height = video.videoHeight;
+                canvasElement.width = video.videoWidth;
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code && code.data !== lastScannedCode) {
+                    lastScannedCode = code.data;
+                    fetch('/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'code=' + encodeURIComponent(code.data)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        notification.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+                        notification.classList.add(data.status === 'success' ? 'bg-green-600' : 'bg-red-600');
+                        notification.textContent = data.message;
+                        output.textContent = data.message;
+                        setTimeout(() => {
+                            notification.classList.add('hidden');
+                            lastScannedCode = null;
+                        }, 3000);
+                    });
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+    </script>
+</body>
+</html>
