@@ -48,6 +48,13 @@
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
     <div class="text-center">
         <h1 class="text-3xl font-bold mb-4">Статистика активированных QR-кодов</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="text-green-600 mb-4">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <table class="table-auto mx-auto border-collapse border border-gray-600">
             <thead>
                 <tr>
@@ -65,10 +72,33 @@
             </tbody>
         </table>
         <div class="mt-4">
+            <button onclick="showConfirmModal()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mr-2">Очистить статистику</button>
             <a href="/logout" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2">Выйти</a>
             <a href="/scan" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Сканировать QR-код</a>
             <a href="/" class="block mt-4 text-blue-400 hover:underline">Вернуться назад</a>
         </div>
+
+        <!-- Модальное окно подтверждения -->
+        <div id="confirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full">
+                <h2 class="text-xl font-bold mb-4">Вы уверены, что хотите очистить статистику?</h2>
+                <div class="flex justify-end space-x-4">
+                    <button onclick="closeConfirmModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Отмена</button>
+                    <form action="/clear_stats" method="POST" class="inline">
+                        <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">Очистить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
+    <script>
+        function showConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+    </script>
 </body>
 </html>

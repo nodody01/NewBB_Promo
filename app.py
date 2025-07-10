@@ -130,6 +130,17 @@ def stats():
         stats = c.fetchall()
     return render_template('stats.html', stats=stats)
 
+@app.route('/clear_stats', methods=['POST'])
+def clear_stats():
+    if not is_authenticated():
+        return redirect(url_for('login'))
+    with sqlite3.connect('newbb.db') as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM scanned_codes')
+        conn.commit()
+    flash('Статистика успешно очищена', 'success')
+    return redirect(url_for('stats'))
+
 if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     init_db()
