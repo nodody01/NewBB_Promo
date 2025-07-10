@@ -5,9 +5,12 @@ import uuid
 import os
 import sqlite3
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'super_secret_key_192800'  # Для сессий (в продакшене используйте случайный ключ)
+app.secret_key = os.getenv('SECRET_KEY', 'super_secret_key_192800')  # Безопасный ключ для сессий
 
 # Инициализация базы данных
 def init_db():
@@ -39,7 +42,7 @@ def index():
 def login():
     if request.method == 'POST':
         password = request.form.get('password')
-        if password == '192800':
+        if password == os.getenv('BARMAN_PASSWORD', '192800'):
             session['authenticated'] = True
             return redirect(url_for('scan'))
         else:
@@ -130,4 +133,5 @@ def stats():
 if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     init_db()
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False, ssl_context=('localhost.pem', 'localhost-key.pem'))

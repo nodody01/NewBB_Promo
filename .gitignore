@@ -1,0 +1,9 @@
+.venv/
+newbb.db
+static/*
+.idea/
+pycache/
+*.pyc
+*.pyo
+*.pyd
+.env

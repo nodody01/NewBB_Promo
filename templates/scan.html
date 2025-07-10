@@ -69,18 +69,22 @@
         const notification = document.getElementById('notification');
         let lastScannedCode = null;
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(stream => {
-                video.srcObject = stream;
-                video.play();
-                requestAnimationFrame(tick);
-            })
-            .catch(err => {
-                output.textContent = 'Ошибка доступа к камере: ' + err;
-            });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            output.textContent = 'Ваш браузер не поддерживает доступ к камере. Используйте современный браузер с поддержкой HTTPS.';
+        } else {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    requestAnimationFrame(tick);
+                })
+                .catch(err => {
+                    output.textContent = 'Ошибка доступа к камере: ' + err;
+                });
+        }
 
         function tick() {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            if (video.readyState === videoH AVE_ENOUGH_DATA) {
                 canvasElement.height = video.videoHeight;
                 canvasElement.width = video.videoWidth;
                 canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
