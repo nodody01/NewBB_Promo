@@ -134,4 +134,4 @@ if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     init_db()
     port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False, ssl_context=('localhost.pem', 'localhost-key.pem'))
+    app.run(host='0.0.0.0', port=port, debug=True)
